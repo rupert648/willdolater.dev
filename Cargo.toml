@@ -1,33 +1,21 @@
-[package]
-name = "oldest-todo-finder"
-version = "0.1.0"
-edition = "2024"
-authors = ["You"]
-description = "A web application that finds the oldest TODO comment in Git repositories"
+[workspace]
+members = [
+    "crates/blame_finder",
+    "crates/todo_templates",
+    "crates/leaderboard",
+    "crates/oldest_todo_finder",
+]
+resolver = "3"
 
-[dependencies]
+[workspace.dependencies]
 axum = "0.7.2"
 tokio = { version = "1.35.1", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.5.0", features = ["fs", "trace"] }
-
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
-
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
-
 html-escape = "0.2.13"
 askama = "0.12"
 chrono = "0.4.40"
-
-blame_finder = { path = "./blame_finder" }
-todo_templates = { path = "./todo_templates"}
-leaderboard = { path = "./leaderboard"}
-
-
-[build-dependencies]
-askama = "0.12"
-
-[workspace]
-members = ["blame_finder", "todo_templates", "leaderboard"]
