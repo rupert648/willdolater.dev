@@ -1,0 +1,17 @@
+[
+  {
+    "file_path": "examples/tinyhttp.rs",
+    "line_number": 155,
+    "todo_text": "// TODO: we should grow this headers array if parsing fails and asks",
+    "context_code": "\n    fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<Request<()>>> {\n        // TODO: we should grow this headers array if parsing fails and asks\n        //       for more headers\n        let mut headers = [None; 16];",
+    "blame_info": {
+      "commit_hash": "5e92b10f3f28360caf0983b6c7296c2db1a4172f",
+      "author": "Alex Crichton",
+      "author_email": "alex@alexcrichton.com",
+      "date": "2017-09-11T04:45:23Z",
+      "summary": "Add a \"tiny\" HTTP example",
+      "age_in_days": 2735
+    },
+    "source_repo_url": "https://github.com/tokio-rs/tokio.git"
+  }
+]

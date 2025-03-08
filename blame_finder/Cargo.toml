@@ -1,0 +1,33 @@
+[package]
+name = "blame_finder"
+version = "0.1.0"
+edition = "2024"
+description = "A library for finding the oldest TODO comments in Git repositories"
+authors = ["You"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35.1", features = ["process", "fs", "io-util", "macros", "rt"] }
+
+# Error handling
+anyhow = "1.0.75"
+thiserror = "1.0.50"
+
+# Serialization
+serde = { version = "1.0.193", features = ["derive"] }
+
+# Date/time handling
+chrono = { version = "0.4.31", features = ["serde"] }
+
+# URL parsing and validation
+url = "2.5.0"
+
+# File operations
+dirs-next = "2.0.0"
+filetime = "0.2.22"
+
+# No direct ripgrep dependency - we shell out to the rg command
+
+[[example]]
+name = "find_todos"
+path = "examples/find_todos.rs"

@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block title %}TOP 100 OLDEST TODOs{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+  <h2 class="section-title">< HALL OF ANTIQUITY >_</h2>
+  <p class="section-desc">THE 100 MOST ANCIENT TODOs EVER DISCOVERED</p>
+
+  {% if todos_length == 0 %}
+  <div class="empty-state">
+    <p class="empty-message">NO ANCIENT ARTIFACTS DISCOVERED YET</p>
+    <p class="empty-submessage">INITIATE A REPOSITORY SCAN TO BEGIN YOUR QUEST</p>
+  </div>
+  {% else %}
+  <div class="table-container">
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>RANK</th>
+          <th>AGE (DAYS)</th>
+          <th>REPO</th>
+          <th>FILE</th>
+          <th>AUTHOR</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for todo in todos %}
+        <tr>
+          <td class="rank-column">{% if loop.index <= 3 %}#{% endif %}{{ loop.index }}</td>
+          <td class="age-column">
+            {{ todo.blame_info.age_in_days }}
+          </td>
+          <td class="filepath-column">
+            {{ todo.display_repo_name }}
+          </td>
+          <td class="repo-column">
+            <code><a target="_blank" href="{{ todo.permalink_url }}">{{ todo.file_path }}:{{ todo.line_number}}</a></code>
+          </td>
+          <td class="author-column">
+            {{ todo.blame_info.author }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

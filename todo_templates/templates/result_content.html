@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+
+{% block title %}ANCIENT TODO DISCOVERED | Oldest TODO Finder{% endblock %}
+
+{% block content %}
+<div class="result">
+    <h2>== ARTIFACT DISCOVERED ==</h2>
+    
+    <div class="scanline-container">
+        <div class="scanline"></div>
+    </div>
+    
+    <div class="todo-item">
+        <h3>> TODO COMMENT:</h3>
+        <div class="code-preview">{{ result.todo_text }}</div>
+    </div>
+
+    <div class="context">
+        <h3>> CODE CONTEXT:</h3>
+        <div class="code-preview">{{ result.context_code }}</div>
+    </div>
+
+    <div class="todo-info">
+        <p>FILE: <strong>{{ result.file_path }}</strong></p>
+        <p>LINE: <strong>{{ result.line_number }}</strong></p>
+
+        {% if let Some(blame_info) = result.blame_info %}
+        <p>COMMIT DATE: <strong>{{ blame_info.date }}</strong></p>
+        <p>COMMIT ID: <strong>{{ blame_info.commit_hash }}</strong></p>
+        <p>MESSAGE: <strong>{{ blame_info.summary }}</strong></p>
+
+        <div class="author-flash">
+            AUTHOR IDENTIFIED: {{ blame_info.author }} &lt;{{ blame_info.author_email }}&gt;
+        </div>
+        
+        <div class="age-calculation">
+            THIS TODO IS APPROXIMATELY 
+            <span class="age-number">{{ blame_info.age_in_days }}</span> 
+            DAYS OLD
+        </div>
+        {% else %}
+        <p><em>HISTORICAL DATA UNAVAILABLE</em></p>
+        {% endif %}
+    </div>
+    
+    <div class="action-buttons">
+        <button class="action-btn" onclick="window.history.back()">NEW SCAN</button>
+        <button class="action-btn share-btn">SHARE DISCOVERY</button>
+    </div>
+</div>
+{% endblock %}

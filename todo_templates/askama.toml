@@ -1,0 +1,9 @@
+[general]
+# The directory where templates are stored
+dir = "templates"
+# Use this HTML escaping strategy
+escaper = "html"
+# File extension for templates
+extension = "html"
+# Enable template inheritance
+inheritance = true
