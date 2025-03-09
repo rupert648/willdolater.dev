@@ -44,17 +44,6 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           cat ~/.ssh/known_hosts  # Debug: Print known_hosts content
           
-      - name: Debug Connection
-        if: success()
-        env:
-          USER: ${{ secrets.LINODE_USER }}
-          HOST: ${{ secrets.LINODE_HOST }}
-        run: |
-          echo "Attempting to connect to $HOST as $USER..."
-          # Test SSH connection with verbose logging
-          ssh -i ~/.ssh/id_ed25519 -v -o StrictHostKeyChecking=no $USER@$HOST "echo Connection successful"
-          
-          
       - name: Deploy to Production
         if: success()
         env:
