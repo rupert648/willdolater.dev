@@ -35,11 +35,11 @@ deploy_willdolater() {
         ssh "${SSH_OPTS:-}" "$USER@$HOST" "sudo cp -r /opt/willdolater/release $backup_name"
     fi
     
-    log_info "Ensuring directories exist"
-    ssh "${SSH_OPTS:-}" "$USER@$HOST" "sudo mkdir -p /opt/willdolater/target/release /opt/willdolater/static"
+    log_info "Ensuring directory exists"
+    ssh "${SSH_OPTS:-}" "$USER@$HOST" "sudo mkdir -p /opt/willdolater/target/release"
     
-    log_info "Preparing temporary directories"
-    ssh "${SSH_OPTS:-}" "$USER@$HOST" "mkdir -p ~/willdolater_temp ~/willdolater_static_temp"
+    log_info "Preparing temporary directory"
+    ssh "${SSH_OPTS:-}" "$USER@$HOST" "mkdir -p ~/willdolater_temp"
     
     log_info "Copying release build"
     # Find the executable files in the release directory
@@ -53,35 +53,22 @@ deploy_willdolater() {
     
     log_info "Found executables: $executable_files"
     
-    # Copy executable files
-    scp "${SSH_OPTS:-}" "$executable_files" "$USER@$HOST:~/willdolater_temp/" || {
-        log_error "Failed to copy willdolater executables to remote host"
+    # Copy only the executable files
+    scp ${SSH_OPTS:-} $executable_files "$USER@$HOST:~/willdolater_temp/" || {
+        log_error "Failed to copy willdolater build to remote host"
         return 1
     }
     
-    # Check if static directory exists
-    if [ -d "static" ]; then
-        log_info "Copying static files"
-        scp "${SSH_OPTS:-}" -r static/* "$USER@$HOST:~/willdolater_static_temp/" || {
-            log_error "Failed to copy static files to remote host"
-            return 1
-        }
-    else
-        log_warning "No static directory found, skipping static files"
-    fi
-    
     log_info "Moving build to final destination"
-    ssh "${SSH_OPTS:-}" "$USER@$HOST" "sudo rm -rf /opt/willdolater/target/release/* && \
+    ssh "$USER@$HOST" "sudo rm -rf /opt/willdolater/target/release/* && \
                        sudo mv ~/willdolater_temp/* /opt/willdolater/target/release/ && \
-                       sudo rm -rf /opt/willdolater/static/* && \
-                       sudo mv ~/willdolater_static_temp/* /opt/willdolater/static/ 2>/dev/null || true && \
                        sudo chown -R willdolater:willdolater /opt/willdolater" || {
         log_error "Failed to move build to destination"
         return 1
     }
     
     log_info "Restarting willdolater service"
-    if ssh "${SSH_OPTS:-}" "$USER@$HOST" "sudo systemctl restart willdolater"; then
+    if ssh "$USER@$HOST" "sudo systemctl restart willdolater"; then
         log_success "Successfully restarted willdolater service"
     else
         log_error "Failed to restart willdolater service"
@@ -89,7 +76,7 @@ deploy_willdolater() {
     fi
     
     log_info "Verifying willdolater service status"
-    if ssh "${SSH_OPTS:-}" "$USER@$HOST" "sudo systemctl is-active willdolater"; then
+    if ssh "$USER@$HOST" "sudo systemctl is-active willdolater"; then
         log_success "willdolater service is running"
     else
         log_error "willdolater service failed to start"
