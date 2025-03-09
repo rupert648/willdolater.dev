@@ -29,17 +29,17 @@ deploy_willdolater() {
     fi
     
     # Create backup of existing build
-    if ssh "$USER@$HOST" "[ -d /opt/willdolater/release ]"; then
+    if ssh ${SSH_OPTS:-} "$USER@$HOST" "[ -d /opt/willdolater/release ]"; then
         local backup_name="/opt/willdolater/release.backup-$(date +%Y%m%d-%H%M%S)"
         log_info "Creating backup: $backup_name"
-        ssh "$USER@$HOST" "sudo cp -r /opt/willdolater/release $backup_name"
+        ssh ${SSH_OPTS:-} "$USER@$HOST" "sudo cp -r /opt/willdolater/release $backup_name"
     fi
     
     log_info "Ensuring directory exists"
-    ssh "$USER@$HOST" "sudo mkdir -p /opt/willdolater/target/release"
+    ssh ${SSH_OPTS:-} "$USER@$HOST" "sudo mkdir -p /opt/willdolater/target/release"
     
     log_info "Copying release build"
-    scp -C -c aes128-gcm@openssh.com -r target/release/* "$USER@$HOST:~/willdolater_temp/" || {
+    scp ${SSH_OPTS:-} -C target/release/* "$USER@$HOST:~/willdolater_temp/" || {
         log_error "Failed to copy willdolater build to remote host"
         return 1
     }
