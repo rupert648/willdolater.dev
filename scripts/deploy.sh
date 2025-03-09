@@ -37,9 +37,15 @@ deploy_willdolater() {
     
     log_info "Ensuring directory exists"
     ssh "${SSH_OPTS:-}" "$USER@$HOST" "sudo mkdir -p /opt/willdolater/target/release"
+
+    log_info "Ensuring static directory exists"
+    ssh "${SSH_OPTS:-}" "$USER@$HOST" "sudo mkdir -p /opt/willdolater/static"
     
     log_info "Preparing temporary directory"
     ssh "${SSH_OPTS:-}" "$USER@$HOST" "mkdir -p ~/willdolater_temp"
+
+    log_info "Preparing static temporary directory"
+    ssh "${SSH_OPTS:-}" "$USER@$HOST" "mkdir -p ~/willdolater_static_temp"
     
     log_info "Copying release build"
     # Find the executable files in the release directory
@@ -58,12 +64,26 @@ deploy_willdolater() {
         log_error "Failed to copy willdolater build to remote host"
         return 1
     }
+
+    # Copy over static files
+    scp ${SSH_OPTS:-} -r static/* "$USER@$HOST:~/willdolater_static_temp/" || {
+        log_error "Failed to copy willdolater static to remote host"
+        return 1
+    }
     
     log_info "Moving build to final destination"
     ssh "$USER@$HOST" "sudo rm -rf /opt/willdolater/target/release/* && \
                        sudo mv ~/willdolater_temp/* /opt/willdolater/target/release/ && \
                        sudo chown -R willdolater:willdolater /opt/willdolater" || {
         log_error "Failed to move build to destination"
+        return 1
+    }
+
+    log_info "Moving static to final destination"
+    ssh "$USER@$HOST" "sudo rm -rf /opt/willdolater/static/* && \
+                       sudo mv ~/willdolater_static_temp/* /opt/willdolater/static/ && \
+                       sudo chown -R willdolater:willdolater /opt/willdolater" || {
+        log_error "Failed to move static to destination"
         return 1
     }
     
