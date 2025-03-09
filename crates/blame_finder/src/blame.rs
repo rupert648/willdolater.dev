@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tokio::process::Command;
@@ -31,29 +32,55 @@ pub struct BlameInfo {
 /// Find the oldest TODO among the provided list
 pub async fn find_oldest_todo(
     repo: &Repository,
-    mut todos: Vec<TodoItem>,
+    todos: Vec<TodoItem>,
 ) -> Result<TodoItem, BlameError> {
     if todos.is_empty() {
         return Err(BlameError::InternalError("No TODOs provided".to_string()));
     }
 
-    // Process blame information for each TODO
-    for todo in &mut todos {
-        match get_blame_info(repo, todo).await {
-            Ok(blame_info) => {
-                todo.blame_info = Some(blame_info);
+    // Process blame information for each TODO in parallel using Tokio
+    debug!("Getting blame info for todos in parallel");
+
+    use tokio::task;
+
+    // Create a vector to hold all the task handles
+    let mut blame_tasks = Vec::with_capacity(todos.len());
+
+    // Spawn a task for each TODO item
+    for todo in todos {
+        let repo_clone = repo.clone();
+
+        // Spawn a Tokio task for each TODO
+        let task_handle = task::spawn(async move {
+            let mut todo_clone = todo;
+            match get_blame_info(&repo_clone, &todo_clone).await {
+                Ok(blame_info) => {
+                    todo_clone.blame_info = Some(blame_info);
+                    Some(todo_clone)
+                }
+                Err(e) => {
+                    eprintln!(
+                        "Error getting blame info for {}: {}",
+                        todo_clone.file_path, e
+                    );
+                    None
+                }
             }
-            Err(e) => {
-                eprintln!("Error getting blame info for {}: {}", todo.file_path, e);
-            }
+        });
+
+        blame_tasks.push(task_handle);
+    }
+
+    let mut todos_with_blame = Vec::new();
+    for task in blame_tasks {
+        match task.await {
+            Ok(Some(todo)) => todos_with_blame.push(todo),
+            Ok(None) => {} // Skip TODOs that failed to get blame info
+            Err(e) => eprintln!("Task join error: {}", e),
         }
     }
 
-    // Filter out TODOs that failed to get blame info
-    let todos_with_blame: Vec<_> = todos
-        .into_iter()
-        .filter(|t| t.blame_info.is_some())
-        .collect();
+    debug!("Finished getting all blame info's in parallel");
 
     if todos_with_blame.is_empty() {
         return Err(BlameError::InternalError(
@@ -70,13 +97,16 @@ pub async fn find_oldest_todo(
     Ok(oldest_todo)
 }
 
-/// Get blame information for a specific TODO
+// Optimized git blame command
 async fn get_blame_info(repo: &Repository, todo: &TodoItem) -> Result<BlameInfo, BlameError> {
-    // Run git blame for the specific line
-    let output = Command::new("git")
+    debug!("Starting blame info for todo: {}", todo.file_path);
+
+    // Using Tokio's Command for async process execution
+    let output = tokio::process::Command::new("git")
         .current_dir(repo.path())
         .arg("blame")
         .arg("-p") // porcelain format for easier parsing
+        .arg("--no-progress") // reduce output
         .arg("-L")
         .arg(format!("{},{}", todo.line_number, todo.line_number))
         .arg("--")
@@ -84,6 +114,8 @@ async fn get_blame_info(repo: &Repository, todo: &TodoItem) -> Result<BlameInfo,
         .output()
         .await
         .map_err(|e| BlameError::GitError(format!("Failed to execute git blame: {}", e)))?;
+
+    debug!("finished blame info for todo: {}", todo.file_path);
 
     if !output.status.success() {
         return Err(BlameError::GitError(format!(
@@ -96,7 +128,6 @@ async fn get_blame_info(repo: &Repository, todo: &TodoItem) -> Result<BlameInfo,
     let blame_output = String::from_utf8_lossy(&output.stdout);
     parse_blame_output(&blame_output, repo.path()).await
 }
-
 /// Parse git blame output in porcelain format
 async fn parse_blame_output(blame_output: &str, repo_path: &Path) -> Result<BlameInfo, BlameError> {
     let lines: Vec<&str> = blame_output.lines().collect();

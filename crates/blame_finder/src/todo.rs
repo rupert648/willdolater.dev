@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::path::Path;
@@ -152,6 +153,7 @@ impl TodoItem {
 
 /// Find all TODOs in the repository using ripgrep
 pub async fn find_todos(repo: &Repository) -> Result<Vec<TodoItem>, BlameError> {
+    debug!("Starting search for todos w/ rg");
     let output = Command::new("rg")
         .current_dir(repo.path())
         .arg("TODO")
@@ -164,6 +166,7 @@ pub async fn find_todos(repo: &Repository) -> Result<Vec<TodoItem>, BlameError> 
         .output()
         .await
         .map_err(|e| BlameError::SearchError(format!("Failed to execute ripgrep: {}", e)))?;
+    debug!("finished search with rg");
 
     if !output.status.success() && !output.stderr.is_empty() {
         let err = String::from_utf8_lossy(&output.stderr).to_string();

@@ -1,3 +1,4 @@
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -144,9 +145,11 @@ impl Repository {
     /// Clone or update the repository
     pub async fn prepare(&self) -> Result<(), BlameError> {
         if self.path.exists() {
+            debug!("path exists");
             // Repository already exists, just fetch latest changes
             self.update().await
         } else {
+            debug!("path doesn't exist, cloning");
             // Repository doesn't exist yet, clone it
             self.clone().await
         }
@@ -161,10 +164,33 @@ impl Repository {
             })?;
         }
 
-        // Clone the repository
+        // Try main branch first, fall back to master if needed
+        let result = self.clone_branch("main").await;
+        if result.is_err() {
+            self.clone_branch("master").await?;
+        }
+
+        // Deepen history after successful clone
+        self.deepen_history(4000).await?;
+
+        Ok(())
+    }
+
+    async fn clone_branch(&self, branch: &str) -> Result<(), BlameError> {
+        // Clone the repository with optimizations
         let output = Command::new("git")
             .arg("clone")
-            .arg("--depth=50000") // Use a reasonable depth to get history
+            .arg("--single-branch")
+            .arg("--branch")
+            .arg(branch)
+            .arg("--filter=blob:none")
+            .arg("--depth=1000")
+            .arg("-c")
+            .arg("core.compression=0")
+            .arg("-c")
+            .arg("http.postBuffer=524288000")
+            .arg("-c")
+            .arg("pack.threads=8")
             .arg(&self.url)
             .arg(&self.path)
             .output()
@@ -173,7 +199,29 @@ impl Repository {
 
         if !output.status.success() {
             return Err(BlameError::GitError(format!(
-                "Git clone failed: {}",
+                "Git clone of branch '{}' failed: {}",
+                branch,
+                String::from_utf8_lossy(&output.stderr)
+            )));
+        }
+
+        Ok(())
+    }
+
+    async fn deepen_history(&self, additional_depth: u32) -> Result<(), BlameError> {
+        let output = Command::new("git")
+            .current_dir(&self.path)
+            .arg("fetch")
+            .arg("--deepen")
+            .arg(additional_depth.to_string())
+            .arg("origin")
+            .output()
+            .await
+            .map_err(|e| BlameError::GitError(format!("Failed to deepen history: {}", e)))?;
+
+        if !output.status.success() {
+            return Err(BlameError::GitError(format!(
+                "Failed to deepen history: {}",
                 String::from_utf8_lossy(&output.stderr)
             )));
         }

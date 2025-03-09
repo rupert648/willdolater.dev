@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::path::PathBuf;
 use std::time::Duration;
 use std::{collections::HashSet, sync::Arc};
@@ -9,14 +10,15 @@ use axum::{
     routing::{get, post},
 };
 use blame_finder::{Repository, TodoItem};
+use chrono::Local;
 use leaderboard::SharedLeaderboard;
+use log::{LevelFilter, debug, error};
 use serde::Deserialize;
 use templates::{error_page, index_page, leaderboard_page, result_page};
 use tokio::sync::Mutex;
 use tokio::task;
 use tokio::time;
 use tower_http::services::ServeDir;
-use tracing::{error, info};
 
 mod templates;
 
@@ -34,10 +36,30 @@ struct RepoForm {
     repo_url: String,
 }
 
+fn setup_logger() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::Builder::new()
+        .format(|buf, record| {
+            let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+            writeln!(
+                buf,
+                "[{} {} {}:{}] {}",
+                timestamp,
+                record.level(),
+                record.file().unwrap_or("unknown"),
+                record.line().unwrap_or(0),
+                record.args()
+            )
+        })
+        .filter_level(LevelFilter::Info) // Default level
+        .parse_env("RUST_LOG") // Override with env var if present
+        .init();
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
-    // Initialize tracing
-    tracing_subscriber::fmt::init();
+    setup_logger().unwrap();
 
     let leaderboard = SharedLeaderboard::new("data/leaderboard.json".to_string(), 100)
         .await
@@ -57,7 +79,7 @@ async fn main() {
 
         loop {
             interval.tick().await;
-            info!("Running repository cleanup task");
+            debug!("Running repository cleanup task");
 
             // TODO: fine-tune, 7 days might be too long
             match blame_finder::cleanup_old_repos(7, Some(cleanup_state.active_repo_paths.clone()))
@@ -65,7 +87,7 @@ async fn main() {
             {
                 Ok(count) => {
                     if count > 0 {
-                        info!("Cleaned up {} old repositories", count);
+                        debug!("Cleaned up {} old repositories", count);
                     }
                 }
                 Err(e) => {
@@ -85,7 +107,7 @@ async fn main() {
     let port = std::env::var("PORT").unwrap_or_else(|_| "8998".to_string());
     let addr = format!("0.0.0.0:{}", port);
 
-    info!("Starting server on {}", addr);
+    debug!("Starting server on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();

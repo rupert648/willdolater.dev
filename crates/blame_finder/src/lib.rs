@@ -2,6 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::{collections::HashSet, path::PathBuf, time::SystemTime};
 
+use log::debug;
 use tokio::sync::Mutex;
 
 mod blame;
@@ -18,7 +19,9 @@ pub use todo::TodoItem;
 /// Main entry point for finding the oldest TODO in a git repository
 pub async fn find_oldest_todo(repo: &Repository) -> Result<Option<TodoItem>, BlameError> {
     // Clone or fetch the repository
+    debug!("getting repo");
     repo.prepare().await?;
+    debug!("done preparing");
 
     // Find all TODO comments
     let todos = todo::find_todos(&repo).await?;

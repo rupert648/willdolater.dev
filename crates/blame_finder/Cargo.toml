@@ -22,6 +22,8 @@ chrono = { workspace = true,  features = ["serde"] }
 # URL parsing and validation
 url = "2.5.0"
 
+log.workspace = true
+
 # File operations
 dirs-next = "2.0.0"
 filetime = "0.2.22"
