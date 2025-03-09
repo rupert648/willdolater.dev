@@ -1,0 +1,52 @@
+name: Rust Testing, Release, and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test-build-deploy:
+    name: Test, Build Release, and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          
+      - name: Debug Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          
+      - name: Run Tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          
+      - name: Build Release
+        if: success()
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+          
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          
+      - name: Deploy to Production
+        if: success()
+        env:
+          USER: ${{ secrets.LINODE_USER }}
+          HOST: ${{ secrets.LINODE_HOST }}
+        run: |
+          chmod +x ./scripts/deploy.sh
+          ./scripts/deploy.sh
