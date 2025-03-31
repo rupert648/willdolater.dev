@@ -51,7 +51,7 @@ pub async fn find_oldest_todo(
         .send_status(
             request_id,
             StatusUpdate {
-                message: "Git Blaming each TODO...".to_string(),
+                message: format!("Found {} TODOs, Git Blaming each one...", todos.len()),
                 stage: state::Stage::Scan,
                 percentage: Some(30),
                 error: None,
