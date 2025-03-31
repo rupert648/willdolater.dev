@@ -3,17 +3,21 @@ members = [
     "crates/blame_finder",
     "crates/todo_templates",
     "crates/leaderboard",
-    "crates/oldest_todo_finder",
+    "crates/server",
 ]
 resolver = "3"
 
 [workspace.dependencies]
-axum = "0.7.2"
+axum = { version = "0.7.2", features = ["ws"] }
+futures = "0.3.31"
 tokio = { version = "1.35.1", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.5.0", features = ["fs", "trace"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
+strum = "0.27.1"
+strum_macros = "0.27.1"
+uuid = { version = "1.15.1", features = ["v4"] }
 log = "0.4.26"
 env_logger = "0.11.6"
 askama = "0.12"

@@ -5,11 +5,11 @@ use std::{collections::HashSet, path::PathBuf, time::SystemTime};
 use log::debug;
 use tokio::sync::Mutex;
 
-mod blame;
+pub mod blame;
 mod error;
 mod helpers;
 mod repo;
-mod todo;
+pub mod todo;
 
 pub use blame::BlameInfo;
 pub use error::BlameError;
@@ -17,6 +17,8 @@ pub use repo::Repository;
 pub use todo::TodoItem;
 
 /// Main entry point for finding the oldest TODO in a git repository
+/// similar to one found in server/src/todo_entrypoint
+/// minus the app state updates
 pub async fn find_oldest_todo(repo: &Repository) -> Result<Option<TodoItem>, BlameError> {
     // Clone or fetch the repository
     debug!("getting repo");

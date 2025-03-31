@@ -29,7 +29,7 @@
         <tr>
           <td class="rank-column">{% if loop.index <= 3 %}#{% endif %}{{ loop.index }}</td>
           <td class="age-column">
-            {{ todo.blame_info.age_in_days }}
+            {{ todo.blame_info.get_age_in_days() }}
           </td>
           <td class="filepath-column">
             {{ todo.display_repo_name }}

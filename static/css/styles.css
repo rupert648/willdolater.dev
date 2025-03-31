@@ -782,3 +782,87 @@ input[type="text"] {
 		opacity: 0;
 	}
 }
+
+/* spinner animations */
+.status-container {
+	margin-top: 20px;
+	padding: 15px;
+	border: 2px solid var(--accent-color);
+	background-color: var(--card-background);
+	font-family: "VT323", monospace;
+}
+
+.status-log {
+	max-height: 200px;
+	overflow-y: auto;
+	margin-bottom: 15px;
+	padding: 10px;
+	background-color: var(--code-background);
+	border: 1px solid var(--border-color);
+	font-family: monospace;
+}
+
+.status-message {
+	margin-bottom: 5px;
+	padding: 3px 0;
+	font-size: 16px;
+}
+
+.status-message.info {
+	color: var(--code-text);
+}
+
+.status-message.progress {
+	color: var(--accent-color);
+}
+
+.status-message.error {
+	color: var(--error-color);
+}
+
+.status-message.success {
+	color: var(--success-color);
+	font-weight: bold;
+}
+
+.progress-indicator {
+	display: flex;
+	align-items: center;
+}
+
+.spinner {
+	width: 20px;
+	height: 20px;
+	border: 3px solid var(--primary-color);
+	border-top: 3px solid transparent;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin-right: 10px;
+}
+
+.spinner.complete {
+	border-color: var(--success-color);
+	border-top-color: var(--success-color);
+	animation: none;
+}
+
+.spinner.error {
+	border-color: var(--error-color);
+	border-top-color: var(--error-color);
+	animation: none;
+}
+
+.current-status {
+	color: var(--text-color);
+	margin: 0;
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+
+	100% {
+		transform: rotate(360deg);
+	}
+}

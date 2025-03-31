@@ -1,4 +1,4 @@
-use blame_finder::{cleanup_old_repos, find_oldest_todo, Repository};
+use blame_finder::{Repository, cleanup_old_repos, find_oldest_todo};
 use std::env;
 
 #[tokio::main(flavor = "current_thread")]

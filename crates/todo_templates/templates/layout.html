@@ -19,13 +19,22 @@
       <a href="/leaderboard" class="nav-button">LEADERBOARD</a>
     </nav>
 
-    <form action="/find-oldest-todo" method="POST" class="repo-form">
+    <form action="/find-oldest-todo" method="POST" class="repo-form" id="repo-form">
       <div class="form-group">
         <label for="repo-url">REPOSITORY COORDINATES:</label>
         <input type="text" id="repo-url" name="repo_url" placeholder="https://github.com/username/repo" required>
       </div>
       <button type="submit">INITIATE SCAN</button>
     </form>
+
+    <div id="processing-status" class="status-container" style="display: none;">
+      <h3>SCAN STATUS:</h3>
+      <div class="status-log"></div>
+      <div class="progress-indicator">
+        <div class="spinner"></div>
+        <p class="current-status">Establishing connection...</p>
+      </div>
+    </div>
 
     {% block content %}{% endblock %}
   </div>
@@ -36,7 +45,9 @@
   </footer>
 
   <script>
+    // Replace the existing WebSocket implementation in paste-2.txt with this code
     document.addEventListener('DOMContentLoaded', function() {
+      // Typewriter effect
       const description = document.querySelector('.description');
       const text = description.textContent;
       description.textContent = '';
@@ -51,8 +62,151 @@
       }
       
       typeWriter();
+
+      // WebSocket connection
+      let socket = null;
+      const statusContainer = document.getElementById('processing-status');
+      const statusLog = document.querySelector('.status-log');
+      const currentStatus = document.querySelector('.current-status');
+      const repoForm = document.getElementById('repo-form');
+      
+      repoForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show the status container immediately
+        statusContainer.style.display = 'block';
+        statusLog.innerHTML = '';
+        addStatusMessage(`Submitting repository...`, 'info');
+        currentStatus.textContent = 'Submitting...';
+        
+        const formData = new FormData(repoForm);
+        const repoUrl = formData.get('repo_url');
+        
+        // Convert FormData to URLSearchParams
+        const urlEncodedData = new URLSearchParams(formData).toString();
+
+        // Submit the form data via fetch
+        fetch('/find-oldest-todo', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: urlEncodedData
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error('Network response was not ok');
+        })
+        .then(data => {
+          // After successful form submission, establish WebSocket connection
+          const requestId = data.request_id;
+          establishWebSocketConnection(requestId, repoUrl);
+        })
+        .catch(error => {
+          addStatusMessage('ERROR: Failed to submit repository. Please try again.', 'error');
+          console.error('Error:', error);
+        });
+      });
+
+      function establishWebSocketConnection(requestId, repoUrl) {
+        // Close any existing connection
+        if (socket) {
+          socket.close();
+        }
+        
+        addStatusMessage(`Connecting to status updates for scan...`, 'info');
+        
+        // Create WebSocket connection
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/scan-status/${requestId}`;
+        
+        socket = new WebSocket(wsUrl);
+        
+        socket.onopen = function() {
+          addStatusMessage('Connection established. Waiting for updates...', 'info');
+          currentStatus.textContent = 'Connected. Awaiting updates...';
+        };
+        
+        socket.onmessage = function(event) {
+          const message = JSON.parse(event.data);
+          console.log("Received message: ", message);
+          
+          switch (message.stage) {
+            case 'init':
+            case 'clone':
+            case 'scan':
+              updateProgress(message);
+              break;
+            case 'complete':
+              scanComplete(message, requestId);
+              break;
+            case 'error':
+              scanError(message, requestId);
+              break;
+            default:
+              addStatusMessage(message.message, 'info');
+          }
+        };
+        
+        socket.onclose = function() {
+          addStatusMessage('Connection closed.', 'info');
+        };
+        
+        socket.onerror = function(error) {
+          console.error('WebSocket error:', error);
+          addStatusMessage('WebSocket error occurred. Connection may be unstable.', 'error');
+        };
+      }
+
+      function updateProgress(message) {
+        currentStatus.textContent = message.message;
+        addStatusMessage(message.message, 'progress');
+        
+        // If there's a percentage, update visual progress
+        if (message.percentage !== null && message.percentage !== undefined) {
+          // Update progress indicator
+          // You could add a progress bar here if desired
+        }
+      }
+
+      function scanComplete(message, requestId) {
+        addStatusMessage('SCAN COMPLETE! Redirecting to results...', 'success');
+        currentStatus.textContent = 'Scan complete!';
+        
+        // Hide spinner or change its appearance
+        document.querySelector('.spinner').classList.add('complete');
+        
+        // Redirect to results page after a short delay
+        setTimeout(function() {
+          window.location.href = message.redirect_url || '/results/' + requestId;
+        }, 1500);
+      }
+
+      function scanError(message, requestId) {
+        addStatusMessage(`ERROR: ${message.error || message.message}`, 'error');
+        currentStatus.textContent = 'Scan failed';
+        document.querySelector('.spinner').classList.add('error');
+        
+        // Optionally, redirect to error page after a delay
+        if (message.redirect_url) {
+          setTimeout(function() {
+            window.location.href = message.redirect_url;
+          }, 3000);
+        }
+      }
+      
+      function addStatusMessage(message, type) {
+        const messageElement = document.createElement('div');
+        messageElement.className = `status-message ${type}`;
+        messageElement.textContent = message;
+        statusLog.appendChild(messageElement);
+        statusLog.scrollTop = statusLog.scrollHeight;
+      }
     });
   </script>
+
 </body>
 
 </html>
