@@ -171,7 +171,7 @@ impl Repository {
         }
 
         // Deepen history after successful clone
-        self.deepen_history(4000).await?;
+        self.deepen_history(10000).await?;
 
         Ok(())
     }

@@ -1,4 +1,8 @@
-use blame_finder::{BlameError, Repository, TodoItem, blame, todo};
+use blame_finder::{
+    BlameError, Repository, TodoItem,
+    blame::{self, get_git_depth},
+    todo,
+};
 use log::debug;
 
 use crate::state::{self, AppState, StatusUpdate};
@@ -59,6 +63,24 @@ pub async fn find_oldest_todo(
             },
         )
         .await;
+    let git_depth = get_git_depth(repo).await;
+    if git_depth.is_ok() && *git_depth.as_ref().unwrap() > 500 {
+        app_state
+            .send_status(
+                request_id,
+                StatusUpdate {
+                    message: format!(
+                        "Git Depth of {}, this could take a while...",
+                        git_depth.unwrap()
+                    ),
+                    stage: state::Stage::Scan,
+                    percentage: Some(30),
+                    error: None,
+                    redirect_url: None,
+                },
+            )
+            .await;
+    }
     let oldest = blame::find_oldest_todo(&repo, todos).await?;
 
     Ok(Some(oldest))

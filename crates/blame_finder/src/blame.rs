@@ -94,6 +94,38 @@ pub async fn find_oldest_todo(
     Ok(oldest_todo)
 }
 
+async fn __get_git_depth(repo: &Repository, branch: &str) -> Result<i64, BlameError> {
+    let output = tokio::process::Command::new("git")
+        .current_dir(repo.path())
+        .arg("rev-list")
+        .arg("--count")
+        .arg(branch)
+        .output()
+        .await
+        .map_err(|e| BlameError::GitError(format!("Failed to execute git rev-list: {}", e)))?;
+
+    if !output.status.success() {
+        return Err(BlameError::GitError(format!(
+            "Git command failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )));
+    }
+
+    let count_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    count_str
+        .parse::<i64>()
+        .map_err(|e| BlameError::GitError(format!("Failed to parse git output as number: {}", e)))
+}
+
+pub async fn get_git_depth(repo: &Repository) -> Result<i64, BlameError> {
+    let result = __get_git_depth(repo, "main").await;
+    if result.is_err() {
+        return __get_git_depth(repo, "master").await;
+    }
+
+    return result;
+}
+
 // Optimized git blame command
 async fn get_blame_info(repo: &Repository, todo: &TodoItem) -> Result<BlameInfo, BlameError> {
     debug!("Starting blame info for todo: {}", todo.file_path);
