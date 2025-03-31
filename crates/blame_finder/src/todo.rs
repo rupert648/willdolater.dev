@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::Utc;
 use log::debug;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -10,7 +11,7 @@ use crate::error::BlameError;
 use crate::helpers::extract_path_segments;
 use crate::repo::Repository;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodoItem {
     /// Relative path to the file containing the TODO
     pub file_path: String,
@@ -31,14 +32,23 @@ pub struct TodoItem {
     pub source_repo_url: String,
 }
 
+impl PartialEq for TodoItem {
+    fn eq(&self, other: &Self) -> bool {
+        // Consider two TodoItems equal if they have the same file path, line number, and source repo
+        self.file_path == other.file_path
+            && self.line_number == other.line_number
+            && self.source_repo_url == other.source_repo_url
+    }
+}
+
 impl Eq for TodoItem {}
 
 impl Ord for TodoItem {
     fn cmp(&self, other: &Self) -> Ordering {
         // Compare by age (oldest first), then by file path, then by line number
         // for stable ordering when ages are equal
-        self.get_age()
-            .cmp(&other.get_age())
+        self.get_age_in_days()
+            .cmp(&other.get_age_in_days())
             .then_with(|| self.file_path.cmp(&other.file_path))
             .then_with(|| self.line_number.cmp(&other.line_number))
     }
@@ -50,12 +60,18 @@ impl PartialOrd for TodoItem {
     }
 }
 
+impl BlameInfo {
+    pub fn get_age_in_days(&self) -> i64 {
+        (Utc::now() - self.date).num_days()
+    }
+}
+
 impl TodoItem {
     // Helper method to get the age of a TODO item
-    fn get_age(&self) -> i64 {
+    fn get_age_in_days(&self) -> i64 {
         self.blame_info
             .as_ref()
-            .map(|blame| blame.age_in_days)
+            .map(|blame| blame.get_age_in_days())
             .unwrap_or(0)
     }
 

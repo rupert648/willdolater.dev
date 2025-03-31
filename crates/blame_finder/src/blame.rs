@@ -24,9 +24,6 @@ pub struct BlameInfo {
 
     /// Commit message summary
     pub summary: String,
-
-    /// Age since the commit, calculated in days since date
-    pub age_in_days: i64,
 }
 
 /// Find the oldest TODO among the provided list
@@ -175,15 +172,12 @@ async fn parse_blame_output(blame_output: &str, repo_path: &Path) -> Result<Blam
     let date = chrono::DateTime::<Utc>::from_timestamp(author_time, 0)
         .ok_or_else(|| BlameError::ParseError("Invalid timestamp".to_string()))?;
 
-    let age_in_days = (Utc::now() - date).num_days();
-
     Ok(BlameInfo {
         commit_hash,
         author,
         author_email,
         date,
         summary,
-        age_in_days,
     })
 }
 

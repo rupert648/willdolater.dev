@@ -1,0 +1,1 @@
+pub const MAX_AGE_REQUESTS_HOURS: i64 = 1;
