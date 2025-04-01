@@ -8,7 +8,7 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
-use blame_finder::{Repository, todo};
+use blame_finder::Repository;
 use constants::MAX_AGE_REQUESTS_HOURS;
 use futures::{sink::SinkExt, stream::StreamExt};
 use leaderboard::SharedLeaderboard;
