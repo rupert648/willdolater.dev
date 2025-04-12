@@ -307,11 +307,12 @@ async fn handle_socket(socket: WebSocket, request_id: String, state: AppState) {
     // First, send all past status updates
     let history = state.get_status_history(&request_id).await;
     for status in history {
-        if let Err(_) = sender
+        if sender
             .send(axum::extract::ws::Message::Text(
                 serde_json::to_string(&status).unwrap(),
             ))
             .await
+            .is_err()
         {
             // Client disconnected
             return;

@@ -44,7 +44,7 @@ pub async fn find_oldest_todo(
             },
         )
         .await;
-    let todos = todo::find_todos(&repo).await?;
+    let todos = todo::find_todos(repo).await?;
 
     if todos.is_empty() {
         return Ok(None);
@@ -81,7 +81,7 @@ pub async fn find_oldest_todo(
             )
             .await;
     }
-    let oldest = blame::find_oldest_todo(&repo, todos).await?;
+    let oldest = blame::find_oldest_todo(repo, todos).await?;
 
     Ok(Some(oldest))
 }

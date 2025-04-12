@@ -69,7 +69,7 @@ where
     }
 
     // For convenience when you want to clone the shared instance
-    pub fn clone(&self) -> Self {
+    pub fn clone_self(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
         }
@@ -116,7 +116,7 @@ where
         // Otherwise, we need to check if this item is better than the worst item
         // Since BTreeSet is ordered, the first item is the lowest/worst
         if let Some(worst_item) = self.items.iter().next().cloned() {
-            if &item > &worst_item {
+            if item > worst_item {
                 // Remove the worst item
                 self.items.remove(&worst_item);
                 // Add the new item
@@ -313,24 +313,19 @@ mod tests {
 
         let shared_leaderboard = SharedLeaderboard::<TestScore>::new(path, 3).await.unwrap();
 
-        // Add items
         shared_leaderboard
             .try_add(TestScore::new("Alice", 100))
             .await;
         shared_leaderboard.try_add(TestScore::new("Bob", 80)).await;
 
-        // Get items and verify
         let items = shared_leaderboard.get_items().await;
         assert_eq!(items.len(), 2);
 
-        // Since get_items returns a reversed vector (highest first)
         assert_eq!(items[0].name, "Alice");
         assert_eq!(items[1].name, "Bob");
 
-        // Create a clone of the shared leaderboard
-        let shared_leaderboard_clone = shared_leaderboard.clone();
+        let shared_leaderboard_clone = shared_leaderboard.clone_self();
 
-        // Add an item via the clone
         shared_leaderboard_clone
             .try_add(TestScore::new("Charlie", 120))
             .await;
@@ -357,7 +352,7 @@ mod tests {
         let mut handles = Vec::new();
 
         for i in 0..10 {
-            let leaderboard_clone = shared_leaderboard.clone();
+            let leaderboard_clone = shared_leaderboard.clone_self();
             let handle = tokio::spawn(async move {
                 leaderboard_clone
                     .try_add(TestScore::new(&format!("Player_{}", i), i * 10))

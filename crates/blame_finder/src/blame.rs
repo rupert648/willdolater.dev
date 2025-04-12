@@ -123,7 +123,7 @@ pub async fn get_git_depth(repo: &Repository) -> Result<i64, BlameError> {
         return __get_git_depth(repo, "master").await;
     }
 
-    return result;
+    result
 }
 
 // Optimized git blame command
@@ -181,17 +181,17 @@ async fn parse_blame_output(blame_output: &str, repo_path: &Path) -> Result<Blam
     let mut author_time = 0;
 
     for line in &lines[1..] {
-        if line.starts_with("author ") {
-            author = line["author ".len()..].to_string();
-        } else if line.starts_with("author-mail ") {
-            author_email = line["author-mail ".len()..].to_string();
+        if let Some(stripped) = line.strip_prefix("author ") {
+            author = stripped.to_string();
+        } else if let Some(stripped) = line.strip_prefix("author-mail ") {
+            author_email = stripped.to_string();
             // Clean up email format: <email> -> email
             author_email = author_email
                 .trim_start_matches('<')
                 .trim_end_matches('>')
                 .to_string();
-        } else if line.starts_with("author-time ") {
-            author_time = line["author-time ".len()..]
+        } else if let Some(stripped) = line.strip_prefix("author-time ") {
+            author_time = stripped
                 .parse::<i64>()
                 .map_err(|_| BlameError::ParseError("Invalid author time".to_string()))?;
         }

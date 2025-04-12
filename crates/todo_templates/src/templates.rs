@@ -48,7 +48,7 @@ impl From<TodoItem> for TodoItemDisplay {
     fn from(value: TodoItem) -> Self {
         TodoItemDisplay {
             file_path: value.file_path.clone(),
-            line_number: value.line_number.clone(),
+            line_number: value.line_number,
             todo_text: value.todo_text.clone(),
             context_code: value.context_code.clone(),
             blame_info: value

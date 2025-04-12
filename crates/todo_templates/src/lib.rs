@@ -7,9 +7,8 @@ pub fn render_template<T: askama::Template>(template: T) -> String {
         Ok(html) => html,
         Err(err) => {
             eprintln!("Template rendering error: {}", err);
-            format!(
-                "<html><body><h1>Internal Error</h1><p>Failed to render template</p></body></html>"
-            )
+            "<html><body><h1>Internal Error</h1><p>Failed to render template</p></body></html>"
+                .to_string()
         }
     }
 }

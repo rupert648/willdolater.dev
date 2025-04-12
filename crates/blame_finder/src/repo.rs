@@ -282,7 +282,7 @@ impl Repository {
             &self.path,
             filetime::FileTime::from_system_time(current_time),
         )
-        .map_err(|e| BlameError::IoError(e))?;
+        .map_err(BlameError::IoError)?;
 
         Ok(())
     }
